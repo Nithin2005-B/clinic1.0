@@ -21,7 +21,7 @@ if (!fs.existsSync(bookingsFile)) fs.writeFileSync(bookingsFile, JSON.stringify(
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER, // Render env variable
+    user: process.env.EMAIL_USER, // Set in Render Dashboard
     pass: process.env.EMAIL_PASS  // Gmail App Password
   }
 });
@@ -119,7 +119,7 @@ app.post("/reply", (req, res) => {
 
   transporter.sendMail({ from: process.env.EMAIL_USER, to: email, subject, text: message }, err => {
     if (err) return res.json({ success: false, message: "❌ Failed to send reply." });
-    res.json({ success: true, message: "✅ Reply sent successfully!" });
+    res.json({ success: true, message: "✅ Reply sent successfully" });
   });
 });
 
