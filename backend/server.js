@@ -4,17 +4,17 @@ const bodyParser = require("body-parser");
 const nodemailer = require("nodemailer");
 const fs = require("fs");
 const path = require("path");
-require("dotenv").config(); // Load environment variables
+require("dotenv").config(); // ✅ Load .env
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// -------------------- FILE PATHS --------------------
+// -------------------- FILES --------------------
 const appointmentsFile = path.join(__dirname, "appointments.json");
 const bookingsFile = path.join(__dirname, "bookings.json");
 
-// Create files if not exist
+// Create files if they don't exist
 if (!fs.existsSync(appointmentsFile)) fs.writeFileSync(appointmentsFile, JSON.stringify([]));
 if (!fs.existsSync(bookingsFile)) fs.writeFileSync(bookingsFile, JSON.stringify([]));
 
@@ -22,26 +22,36 @@ if (!fs.existsSync(bookingsFile)) fs.writeFileSync(bookingsFile, JSON.stringify(
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER, // Gmail to send emails
-    pass: process.env.EMAIL_PASS  // Gmail App Password
+    user: process.env.EMAIL_USER, // Your Gmail
+    pass: process.env.EMAIL_PASS  // App password if using 2FA
   }
 });
 
 // -------------------- HELPERS --------------------
-const saveJSON = (file, data) => fs.writeFileSync(file, JSON.stringify(data, null, 2));
-const readJSON = (file) => JSON.parse(fs.readFileSync(file));
+function saveJSON(file, data) {
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+}
+function readJSON(file) {
+  return JSON.parse(fs.readFileSync(file));
+}
 
-// -------------------- APPOINTMENTS --------------------
+// -------------------- APPOINTMENT --------------------
 app.post("/appointment", (req, res) => {
   const { name, email, phone, message } = req.body;
-  if (!name || !email || !phone) return res.json({ success: false, message: "⚠ All fields required!" });
+  if (!name || !email || !phone) return res.json({ success: false, message: "⚠️ All fields required!" });
 
   const appointment = { id: Date.now(), name, email, phone, message, date: new Date().toISOString() };
   const data = readJSON(appointmentsFile);
   data.push(appointment);
   saveJSON(appointmentsFile, data);
 
-  // Send confirmation email to patient
+  const clinicMail = {
+    from: process.env.EMAIL_USER,
+    to: process.env.CLINIC_EMAIL, // Clinic email from env
+    subject: "📩 New Appointment Request",
+    text: `Name: ${name}\nEmail: ${email}\nPhone: ${phone}\nMessage: ${message}\nDate: ${appointment.date}`
+  };
+
   const patientMail = {
     from: process.env.EMAIL_USER,
     to: email,
@@ -49,28 +59,29 @@ app.post("/appointment", (req, res) => {
     text: `Hello ${name},\n\nWe have received your appointment request. Our team will contact you soon.\n\n- Sakthi Dental Clinic`
   };
 
+  transporter.sendMail(clinicMail, (err) => err && console.error(err));
   transporter.sendMail(patientMail, (err) => {
-    if (err) {
-      console.error(err);
-      return res.json({ success: true, message: "Appointment saved but email failed." });
-    }
-    res.json({ success: true, message: "✅ Appointment submitted successfully!" });
+    if (err) return res.json({ success: true, message: "Appointment saved, clinic notified, patient email failed." });
+    res.json({ success: true, message: "✅ Appointment request submitted successfully!" });
   });
 });
 
-app.get("/appointment", (req, res) => {
-  res.json({ success: true, appointments: readJSON(appointmentsFile) });
-});
-
-// -------------------- TREATMENT BOOKINGS --------------------
+// -------------------- TREATMENT BOOKING --------------------
 app.post("/book", (req, res) => {
   const { treatment, name, email, phone } = req.body;
-  if (!treatment || !name || !email || !phone) return res.json({ success: false, message: "⚠ All fields required!" });
+  if (!treatment || !name || !email || !phone) return res.json({ success: false, message: "⚠️ All fields required!" });
 
   const booking = { id: Date.now(), treatment, name, email, phone, date: new Date().toISOString() };
   const data = readJSON(bookingsFile);
   data.push(booking);
   saveJSON(bookingsFile, data);
+
+  const clinicMail = {
+    from: process.env.EMAIL_USER,
+    to: process.env.CLINIC_EMAIL,
+    subject: `📩 New Treatment Booking: ${treatment}`,
+    text: `Name: ${name}\nEmail: ${email}\nPhone: ${phone}\nTreatment: ${treatment}\nDate: ${booking.date}`
+  };
 
   const patientMail = {
     from: process.env.EMAIL_USER,
@@ -79,18 +90,16 @@ app.post("/book", (req, res) => {
     text: `Hello ${name},\n\nYour booking is confirmed.\nTreatment: ${treatment}\nPhone: ${phone}\nDate: ${new Date(booking.date).toLocaleString()}\n\n- Sakthi Dental Clinic`
   };
 
+  transporter.sendMail(clinicMail, (err) => err && console.error(err));
   transporter.sendMail(patientMail, (err) => {
-    if (err) {
-      console.error(err);
-      return res.json({ success: true, message: "Booking saved but email failed." });
-    }
-    res.json({ success: true, message: "✅ Booking saved & confirmation email sent!" });
+    if (err) return res.json({ success: true, message: "Booking saved, clinic notified, patient email failed." });
+    res.json({ success: true, message: "✅ Booking saved & emails sent successfully!" });
   });
 });
 
-app.get("/book", (req, res) => {
-  res.json({ success: true, bookings: readJSON(bookingsFile) });
-});
+// -------------------- GET APPOINTMENTS & BOOKINGS --------------------
+app.get("/appointment", (req, res) => res.json({ success: true, appointments: readJSON(appointmentsFile) }));
+app.get("/book", (req, res) => res.json({ success: true, bookings: readJSON(bookingsFile) }));
 
 // -------------------- DELETE BOOKING --------------------
 app.delete("/bookings/:id", (req, res) => {
@@ -102,18 +111,25 @@ app.delete("/bookings/:id", (req, res) => {
   res.json({ success: true, message: "✅ Booking deleted successfully" });
 });
 
-// -------------------- REPLY --------------------
+// -------------------- REPLY EMAIL --------------------
 app.post("/reply", (req, res) => {
   const { email, subject, message } = req.body;
-  if (!email || !subject || !message) return res.json({ success: false, message: "⚠ All fields required!" });
+  if (!email || !subject || !message) return res.json({ success: false, message: "⚠️ All fields required!" });
 
-  transporter.sendMail({ from: process.env.EMAIL_USER, to: email, subject, text: message }, (err) => {
+  const replyMail = { from: process.env.EMAIL_USER, to: email, subject, text: message };
+  transporter.sendMail(replyMail, (err) => {
     if (err) return res.json({ success: false, message: "❌ Failed to send reply." });
     res.json({ success: true, message: "✅ Reply sent successfully!" });
   });
 });
 
-// -------------------- SERVER --------------------
+// -------------------- SERVE FRONTEND --------------------
+app.use(express.static(path.join(__dirname, "public"))); // <-- put all frontend files here
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/index.html"));
+});
+
+// -------------------- START SERVER --------------------
 const PORT = process.env.PORT || 5000;
-app.get("/", (req, res) => res.send("🚀 Backend is running!"));
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
