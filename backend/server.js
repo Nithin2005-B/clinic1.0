@@ -4,7 +4,7 @@ const bodyParser = require("body-parser");
 const nodemailer = require("nodemailer");
 const fs = require("fs");
 const path = require("path");
-require("dotenv").config(); // ✅ Load .env
+require("dotenv").config();
 
 const app = express();
 app.use(cors());
@@ -22,18 +22,14 @@ if (!fs.existsSync(bookingsFile)) fs.writeFileSync(bookingsFile, JSON.stringify(
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER, // Your Gmail
-    pass: process.env.EMAIL_PASS  // App password if using 2FA
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
   }
 });
 
 // -------------------- HELPERS --------------------
-function saveJSON(file, data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
-}
-function readJSON(file) {
-  return JSON.parse(fs.readFileSync(file));
-}
+function saveJSON(file, data) { fs.writeFileSync(file, JSON.stringify(data, null, 2)); }
+function readJSON(file) { return JSON.parse(fs.readFileSync(file)); }
 
 // -------------------- APPOINTMENT --------------------
 app.post("/appointment", (req, res) => {
@@ -45,13 +41,15 @@ app.post("/appointment", (req, res) => {
   data.push(appointment);
   saveJSON(appointmentsFile, data);
 
+  // Clinic email
   const clinicMail = {
     from: process.env.EMAIL_USER,
-    to: process.env.CLINIC_EMAIL, // Clinic email from env
+    to: process.env.CLINIC_EMAIL,
     subject: "📩 New Appointment Request",
     text: `Name: ${name}\nEmail: ${email}\nPhone: ${phone}\nMessage: ${message}\nDate: ${appointment.date}`
   };
 
+  // Patient confirmation email
   const patientMail = {
     from: process.env.EMAIL_USER,
     to: email,
@@ -76,6 +74,7 @@ app.post("/book", (req, res) => {
   data.push(booking);
   saveJSON(bookingsFile, data);
 
+  // Clinic email
   const clinicMail = {
     from: process.env.EMAIL_USER,
     to: process.env.CLINIC_EMAIL,
@@ -83,6 +82,7 @@ app.post("/book", (req, res) => {
     text: `Name: ${name}\nEmail: ${email}\nPhone: ${phone}\nTreatment: ${treatment}\nDate: ${booking.date}`
   };
 
+  // Patient confirmation email
   const patientMail = {
     from: process.env.EMAIL_USER,
     to: email,
@@ -97,14 +97,14 @@ app.post("/book", (req, res) => {
   });
 });
 
-// -------------------- GET APPOINTMENTS & BOOKINGS --------------------
+// -------------------- GET BOOKINGS / APPOINTMENTS --------------------
 app.get("/appointment", (req, res) => res.json({ success: true, appointments: readJSON(appointmentsFile) }));
 app.get("/book", (req, res) => res.json({ success: true, bookings: readJSON(bookingsFile) }));
 
 // -------------------- DELETE BOOKING --------------------
 app.delete("/bookings/:id", (req, res) => {
   const id = parseInt(req.params.id);
-  let data = readJSON(bookingsFile);
+  const data = readJSON(bookingsFile);
   const newData = data.filter(b => b.id !== id);
   if (data.length === newData.length) return res.status(404).json({ success: false, message: "Booking not found" });
   saveJSON(bookingsFile, newData);
@@ -124,12 +124,12 @@ app.post("/reply", (req, res) => {
 });
 
 // -------------------- SERVE FRONTEND --------------------
-app.use(express.static(path.join(__dirname, "public"))); // <-- put all frontend files here
+app.use(express.static(path.join(__dirname, "..", "public")));
 
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "public/index.html"));
+  res.sendFile(path.join(__dirname, "..", "public", "index.html"));
 });
 
-// -------------------- START SERVER --------------------
+// -------------------- SERVER --------------------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
