@@ -21,8 +21,8 @@ if (!fs.existsSync(bookingsFile)) fs.writeFileSync(bookingsFile, JSON.stringify(
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER, // Render environment variable
-    pass: process.env.EMAIL_PASS  // App password
+    user: process.env.EMAIL_USER, // Render env variable
+    pass: process.env.EMAIL_PASS  // Gmail App Password
   }
 });
 
@@ -33,6 +33,9 @@ function saveJSON(file, data) {
 function readJSON(file) {
   return JSON.parse(fs.readFileSync(file));
 }
+
+// -------------------- FRONTEND --------------------
+app.use(express.static(path.join(__dirname, "../frontend")));
 
 // -------------------- APPOINTMENTS --------------------
 app.post("/appointment", (req, res) => {
@@ -65,9 +68,7 @@ app.post("/appointment", (req, res) => {
   });
 });
 
-app.get("/appointment", (req, res) => {
-  res.json({ success: true, appointments: readJSON(appointmentsFile) });
-});
+app.get("/appointment", (req, res) => res.json({ success: true, appointments: readJSON(appointmentsFile) }));
 
 // -------------------- BOOKINGS --------------------
 app.post("/book", (req, res) => {
@@ -122,8 +123,11 @@ app.post("/reply", (req, res) => {
   });
 });
 
-// -------------------- SERVER --------------------
-app.get("/", (req, res) => res.send("🚀 Backend is running! Use /book, /appointment, /bookings, /reply APIs."));
+// -------------------- SPA fallback --------------------
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/index.html"));
+});
 
+// -------------------- SERVER --------------------
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running at port ${PORT}`));
