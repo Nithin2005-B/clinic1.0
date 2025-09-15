@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Treatments | Sakthi Dental Clinic</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <header>
+    <nav class="navbar">
+      <div class="logo">Sakthi Dental Clinic</div>
+      <div class="menu-toggle" id="menu-toggle">☰</div>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="about.html">About Us</a></li>
+        <li><a href="treatments.html" class="active">Treatments</a></li>
+        <li><a href="contact.html">Contact</a></li>
+        <li><a href="privacy.html">Privacy</a></li>
+      </ul>
+    </nav>
+  </header>
+
+<section class="treatments">
+  <h1>Book a Treatment</h1>
+  <form id="treatmentForm">
+    <label for="treatmentName">Select Treatment:</label>
+    <select id="treatmentName" required>
+      <option value="">--Choose--</option>
+      <option value="Teeth Cleaning">Teeth Cleaning</option>
+      <option value="Root Canal">Root Canal</option>
+      <option value="Braces">Braces</option>
+      <option value="Dental Implant">Dental Implant</option>
+    </select>
+
+    <input type="text" id="treatmentCustomerName" placeholder="Your Name" required>
+    <input type="email" id="treatmentEmail" placeholder="Your Email" required>
+    <input type="text" id="treatmentPhone" placeholder="Phone Number" required>
+
+    <button type="submit" class="btn">Submit</button>
+  </form>
+</section>
+
+
+  <footer>
+    <p>© 2025 Sakthi Dental Clinic | All Rights Reserved</p>
+  </footer>
+</body>
+</html>
