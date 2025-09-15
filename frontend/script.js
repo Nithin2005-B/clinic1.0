@@ -1,4 +1,4 @@
-/* ===================== DYNAMIC API URL ===================== */
+/* ===================== API BASE URL ===================== */
 const API_BASE_URL = window.location.hostname.includes("localhost")
   ? "http://localhost:5000"
   : "https://your-backend.onrender.com"; // <-- Replace with your Render backend URL
@@ -68,7 +68,7 @@ if (appointmentForm) {
       });
       const result = await res.json();
       alert(result.message);
-      if(result.success) appointmentForm.reset();
+      if (result.success) appointmentForm.reset();
     } catch (err) {
       console.error(err);
       alert("⚠ Error submitting appointment.");
@@ -164,7 +164,6 @@ async function loadBookings() {
       bookingsTable.appendChild(row);
     });
 
-    // Attach delete buttons
     document.querySelectorAll(".delete-btn").forEach(btn => {
       btn.addEventListener("click", async (e) => {
         e.stopPropagation();
@@ -175,7 +174,6 @@ async function loadBookings() {
         }
       });
     });
-
   } catch (err) {
     console.error(err);
     bookingsTable.innerHTML = `<tr><td colspan="7">⚠ Error loading bookings</td></tr>`;
