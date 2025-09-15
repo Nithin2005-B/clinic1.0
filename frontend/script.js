@@ -1,5 +1,7 @@
-/* ===================== CONFIG ===================== */
-const API_BASE_URL = "https://your-backend-service.onrender.com"; // Replace with your Render backend URL
+/* ===================== DYNAMIC API URL ===================== */
+const API_BASE_URL = window.location.hostname.includes("localhost")
+  ? "http://localhost:5000"
+  : "https://your-backend.onrender.com"; // <-- Replace with your Render backend URL
 
 /* ===================== NAVBAR TOGGLE ===================== */
 const menuToggle = document.getElementById("menu-toggle");
@@ -15,6 +17,7 @@ const testimonials = document.querySelectorAll(".testimonial-slider blockquote")
 const prevBtn = document.querySelector(".testimonial-slider .prev");
 const nextBtn = document.querySelector(".testimonial-slider .next");
 const dotsContainer = document.querySelector(".testimonial-slider .dots");
+
 let index = 0;
 
 if (dotsContainer && testimonials.length > 0) {
@@ -65,7 +68,7 @@ if (appointmentForm) {
       });
       const result = await res.json();
       alert(result.message);
-      if (result.success) appointmentForm.reset();
+      if(result.success) appointmentForm.reset();
     } catch (err) {
       console.error(err);
       alert("⚠ Error submitting appointment.");
@@ -78,6 +81,7 @@ const treatmentForm = document.getElementById("treatmentForm");
 if (treatmentForm) {
   treatmentForm.addEventListener("submit", async (e) => {
     e.preventDefault();
+
     const treatment = document.getElementById("treatmentName").value.trim();
     const name = document.getElementById("treatmentCustomerName").value.trim();
     const email = document.getElementById("treatmentEmail").value.trim();
@@ -160,7 +164,7 @@ async function loadBookings() {
       bookingsTable.appendChild(row);
     });
 
-    // Attach delete functionality
+    // Attach delete buttons
     document.querySelectorAll(".delete-btn").forEach(btn => {
       btn.addEventListener("click", async (e) => {
         e.stopPropagation();
@@ -171,6 +175,7 @@ async function loadBookings() {
         }
       });
     });
+
   } catch (err) {
     console.error(err);
     bookingsTable.innerHTML = `<tr><td colspan="7">⚠ Error loading bookings</td></tr>`;
