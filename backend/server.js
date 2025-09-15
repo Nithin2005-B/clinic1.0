@@ -18,8 +18,7 @@ const bookingsFile = path.join(__dirname, "bookings.json");
 if (!fs.existsSync(appointmentsFile)) fs.writeFileSync(appointmentsFile, JSON.stringify([]));
 if (!fs.existsSync(bookingsFile)) fs.writeFileSync(bookingsFile, JSON.stringify([]));
 
-// -------------------- EMAIL --------------------
-const PORT = process.env.PORT || 5000;
+// -------------------- EMAIL -------------------
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
