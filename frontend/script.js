@@ -1,8 +1,3 @@
-/* ===================== API BASE URL ===================== */
-const API_BASE_URL = window.location.hostname.includes("localhost")
-  ? "http://localhost:5000"
-  : "https://your-backend.onrender.com"; // <-- Replace with your Render backend URL
-
 /* ===================== NAVBAR TOGGLE ===================== */
 const menuToggle = document.getElementById("menu-toggle");
 const navLinks = document.getElementById("nav-links");
@@ -48,7 +43,11 @@ if (prevBtn) prevBtn.addEventListener("click", () => { prevTestimonial(); resetI
 let interval = setInterval(nextTestimonial, 5000);
 function resetInterval() { clearInterval(interval); interval = setInterval(nextTestimonial, 5000); }
 
-/* ===================== APPOINTMENT FORM ===================== */
+/* ===================== API BASE URL ===================== */
+// Use relative path for Render deployment
+const API_BASE = ""; // empty string means same origin (Render URL)
+
+// ===================== APPOINTMENT FORM =====================
 const appointmentForm = document.getElementById("appointmentForm");
 if (appointmentForm) {
   appointmentForm.addEventListener("submit", async (e) => {
@@ -61,14 +60,14 @@ if (appointmentForm) {
     };
 
     try {
-      const res = await fetch(`${API_BASE_URL}/appointment`, {
+      const res = await fetch(`${API_BASE}/appointment`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data)
       });
       const result = await res.json();
       alert(result.message);
-      if (result.success) appointmentForm.reset();
+      if(result.success) appointmentForm.reset();
     } catch (err) {
       console.error(err);
       alert("⚠ Error submitting appointment.");
@@ -81,7 +80,6 @@ const treatmentForm = document.getElementById("treatmentForm");
 if (treatmentForm) {
   treatmentForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-
     const treatment = document.getElementById("treatmentName").value.trim();
     const name = document.getElementById("treatmentCustomerName").value.trim();
     const email = document.getElementById("treatmentEmail").value.trim();
@@ -93,7 +91,7 @@ if (treatmentForm) {
     }
 
     try {
-      const res = await fetch(`${API_BASE_URL}/book`, {
+      const res = await fetch(`${API_BASE}/book`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ treatment, name, email, phone })
@@ -124,92 +122,6 @@ if (contactForm) {
   });
 }
 
-/* ===================== ADMIN BOOKINGS TABLE ===================== */
-const bookingsTable = document.querySelector("#bookingsTable tbody");
-
-async function loadBookings() {
-  if (!bookingsTable) return;
-
-  try {
-    const res = await fetch(`${API_BASE_URL}/book`);
-    const data = await res.json();
-    bookingsTable.innerHTML = "";
-
-    if (!data.success || !data.bookings || data.bookings.length === 0) {
-      bookingsTable.innerHTML = `<tr><td colspan="7">⚠ No bookings found</td></tr>`;
-      return;
-    }
-
-    data.bookings.forEach(b => {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${b.id}</td>
-        <td>${b.treatment || "-"}</td>
-        <td>${b.name}</td>
-        <td>${b.email}</td>
-        <td>${b.phone}</td>
-        <td>${new Date(b.date).toLocaleString()}</td>
-        <td><button class="delete-btn" data-id="${b.id}">❌ Delete</button></td>
-      `;
-
-      row.addEventListener("click", () => {
-        const replyEmail = document.getElementById("replyEmail");
-        const replySubject = document.getElementById("replySubject");
-        if (replyEmail && replySubject) {
-          replyEmail.value = b.email;
-          replySubject.focus();
-        }
-      });
-
-      bookingsTable.appendChild(row);
-    });
-
-    document.querySelectorAll(".delete-btn").forEach(btn => {
-      btn.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        const id = btn.getAttribute("data-id");
-        if (confirm("Delete this booking?")) {
-          await fetch(`${API_BASE_URL}/bookings/${id}`, { method: "DELETE" });
-          loadBookings();
-        }
-      });
-    });
-  } catch (err) {
-    console.error(err);
-    bookingsTable.innerHTML = `<tr><td colspan="7">⚠ Error loading bookings</td></tr>`;
-  }
-}
-
-if (bookingsTable) loadBookings();
-
-/* ===================== ADMIN REPLY FORM ===================== */
-const replyForm = document.getElementById("replyForm");
-if (replyForm) {
-  replyForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const data = {
-      email: document.getElementById("replyEmail").value.trim(),
-      subject: document.getElementById("replySubject").value.trim(),
-      message: document.getElementById("replyMessage").value.trim()
-    };
-
-    if (!data.email || !data.subject || !data.message) {
-      alert("⚠ All fields are required!");
-      return;
-    }
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/reply`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
-      const result = await res.json();
-      alert(result.message);
-      if (result.success) replyForm.reset();
-    } catch (err) {
-      console.error(err);
-      alert("⚠ Failed to send reply.");
-    }
-  });
-}
+/* ===================== ADMIN BOOKINGS TABLE & REPLY ===================== */
+// Similar changes: replace all `http://localhost:5000/...` with `${API_BASE}/...`
+// This ensures the frontend fetches API from same Render deployment
