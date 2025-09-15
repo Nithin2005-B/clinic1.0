@@ -1,17 +1,15 @@
-// server.js
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const nodemailer = require("nodemailer");
 const fs = require("fs");
 const path = require("path");
-require("dotenv").config(); // Load environment variables
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// -------------------- FILE PATHS --------------------
+// -------------------- FILES --------------------
 const appointmentsFile = path.join(__dirname, "appointments.json");
 const bookingsFile = path.join(__dirname, "bookings.json");
 
@@ -19,12 +17,12 @@ const bookingsFile = path.join(__dirname, "bookings.json");
 if (!fs.existsSync(appointmentsFile)) fs.writeFileSync(appointmentsFile, JSON.stringify([]));
 if (!fs.existsSync(bookingsFile)) fs.writeFileSync(bookingsFile, JSON.stringify([]));
 
-// -------------------- EMAIL SETUP --------------------
+// -------------------- EMAIL --------------------
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER, // bandrinithin24@gmail.com
-    pass: process.env.EMAIL_PASS  // App Password from Gmail
+    user: process.env.EMAIL_USER, // Render env var
+    pass: process.env.EMAIL_PASS  // Render env var (App Password)
   }
 });
 
@@ -32,7 +30,6 @@ const transporter = nodemailer.createTransport({
 function saveJSON(file, data) {
   fs.writeFileSync(file, JSON.stringify(data, null, 2));
 }
-
 function readJSON(file) {
   return JSON.parse(fs.readFileSync(file));
 }
@@ -50,12 +47,12 @@ app.post("/appointment", (req, res) => {
   // Email to clinic
   const clinicMail = {
     from: process.env.EMAIL_USER,
-    to: "receiveremail@gmail.com", // Clinic email
+    to: "receiveremail@gmail.com",
     subject: "📩 New Appointment Request",
     text: `Name: ${name}\nEmail: ${email}\nPhone: ${phone}\nMessage: ${message}\nDate: ${appointment.date}`
   };
 
-  // Confirmation email to patient
+  // Confirmation to patient
   const patientMail = {
     from: process.env.EMAIL_USER,
     to: email,
@@ -63,8 +60,8 @@ app.post("/appointment", (req, res) => {
     text: `Hello ${name},\n\nWe have received your appointment request. Our team will contact you soon.\n\n- Sakthi Dental Clinic`
   };
 
-  transporter.sendMail(clinicMail, (err) => err && console.error(err));
-  transporter.sendMail(patientMail, (err) => {
+  transporter.sendMail(clinicMail, err => err && console.error(err));
+  transporter.sendMail(patientMail, err => {
     if (err) return res.json({ success: true, message: "Appointment saved, clinic notified, patient email failed." });
     res.json({ success: true, message: "✅ Appointment request submitted successfully!" });
   });
@@ -75,7 +72,7 @@ app.get("/appointment", (req, res) => {
   res.json({ success: true, appointments: data });
 });
 
-// -------------------- TREATMENT BOOKINGS --------------------
+// -------------------- BOOKINGS --------------------
 app.post("/book", (req, res) => {
   const { treatment, name, email, phone } = req.body;
   if (!treatment || !name || !email || !phone) return res.json({ success: false, message: "⚠️ All fields required!" });
@@ -85,7 +82,6 @@ app.post("/book", (req, res) => {
   data.push(booking);
   saveJSON(bookingsFile, data);
 
-  // Email to clinic
   const clinicMail = {
     from: process.env.EMAIL_USER,
     to: "receiveremail@gmail.com",
@@ -93,7 +89,6 @@ app.post("/book", (req, res) => {
     text: `Name: ${name}\nEmail: ${email}\nPhone: ${phone}\nTreatment: ${treatment}\nDate: ${booking.date}`
   };
 
-  // Confirmation email to patient
   const patientMail = {
     from: process.env.EMAIL_USER,
     to: email,
@@ -101,8 +96,8 @@ app.post("/book", (req, res) => {
     text: `Hello ${name},\n\nYour booking is confirmed.\nTreatment: ${treatment}\nPhone: ${phone}\nDate: ${new Date(booking.date).toLocaleString()}\n\n- Sakthi Dental Clinic`
   };
 
-  transporter.sendMail(clinicMail, (err) => err && console.error(err));
-  transporter.sendMail(patientMail, (err) => {
+  transporter.sendMail(clinicMail, err => err && console.error(err));
+  transporter.sendMail(patientMail, err => {
     if (err) return res.json({ success: true, message: "Booking saved, clinic notified, patient email failed." });
     res.json({ success: true, message: "✅ Booking saved & emails sent successfully!" });
   });
@@ -113,7 +108,6 @@ app.get("/book", (req, res) => {
   res.json({ success: true, bookings: data });
 });
 
-// -------------------- DELETE BOOKING --------------------
 app.delete("/bookings/:id", (req, res) => {
   const id = parseInt(req.params.id);
   let data = readJSON(bookingsFile);
@@ -129,7 +123,7 @@ app.post("/reply", (req, res) => {
   if (!email || !subject || !message) return res.json({ success: false, message: "⚠️ All fields required!" });
 
   const replyMail = { from: process.env.EMAIL_USER, to: email, subject, text: message };
-  transporter.sendMail(replyMail, (err) => {
+  transporter.sendMail(replyMail, err => {
     if (err) return res.json({ success: false, message: "❌ Failed to send reply." });
     res.json({ success: true, message: "✅ Reply sent successfully!" });
   });
