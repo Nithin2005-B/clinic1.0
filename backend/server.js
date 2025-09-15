@@ -19,13 +19,15 @@ if (!fs.existsSync(appointmentsFile)) fs.writeFileSync(appointmentsFile, JSON.st
 if (!fs.existsSync(bookingsFile)) fs.writeFileSync(bookingsFile, JSON.stringify([]));
 
 // -------------------- EMAIL --------------------
+const PORT = process.env.PORT || 5000;
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: "bandrinithin24@gmail.com", // Replace with your Gmail
-    pass: "yhxhncshvtjzgsxh"          // App Password
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
   }
 });
+
 
 // -------------------- HELPERS --------------------
 function saveJSON(file, data) {
