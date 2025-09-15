@@ -13,7 +13,7 @@ app.use(bodyParser.json());
 const appointmentsFile = path.join(__dirname, "appointments.json");
 const bookingsFile = path.join(__dirname, "bookings.json");
 
-// Create files if they don't exist
+// Create files if missing
 if (!fs.existsSync(appointmentsFile)) fs.writeFileSync(appointmentsFile, JSON.stringify([]));
 if (!fs.existsSync(bookingsFile)) fs.writeFileSync(bookingsFile, JSON.stringify([]));
 
@@ -21,8 +21,8 @@ if (!fs.existsSync(bookingsFile)) fs.writeFileSync(bookingsFile, JSON.stringify(
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER, // Render env var
-    pass: process.env.EMAIL_PASS  // Render env var (App Password)
+    user: process.env.EMAIL_USER, // Render environment variable
+    pass: process.env.EMAIL_PASS  // App password
   }
 });
 
@@ -44,7 +44,6 @@ app.post("/appointment", (req, res) => {
   data.push(appointment);
   saveJSON(appointmentsFile, data);
 
-  // Email to clinic
   const clinicMail = {
     from: process.env.EMAIL_USER,
     to: "receiveremail@gmail.com",
@@ -52,7 +51,6 @@ app.post("/appointment", (req, res) => {
     text: `Name: ${name}\nEmail: ${email}\nPhone: ${phone}\nMessage: ${message}\nDate: ${appointment.date}`
   };
 
-  // Confirmation to patient
   const patientMail = {
     from: process.env.EMAIL_USER,
     to: email,
@@ -68,8 +66,7 @@ app.post("/appointment", (req, res) => {
 });
 
 app.get("/appointment", (req, res) => {
-  const data = readJSON(appointmentsFile);
-  res.json({ success: true, appointments: data });
+  res.json({ success: true, appointments: readJSON(appointmentsFile) });
 });
 
 // -------------------- BOOKINGS --------------------
@@ -103,16 +100,13 @@ app.post("/book", (req, res) => {
   });
 });
 
-app.get("/book", (req, res) => {
-  const data = readJSON(bookingsFile);
-  res.json({ success: true, bookings: data });
-});
+app.get("/book", (req, res) => res.json({ success: true, bookings: readJSON(bookingsFile) }));
 
 app.delete("/bookings/:id", (req, res) => {
   const id = parseInt(req.params.id);
-  let data = readJSON(bookingsFile);
+  const data = readJSON(bookingsFile);
   const newData = data.filter(b => b.id !== id);
-  if (data.length === newData.length) return res.status(404).json({ success: false, message: "Booking not found" });
+  if (newData.length === data.length) return res.status(404).json({ success: false, message: "Booking not found" });
   saveJSON(bookingsFile, newData);
   res.json({ success: true, message: "✅ Booking deleted successfully" });
 });
@@ -122,8 +116,7 @@ app.post("/reply", (req, res) => {
   const { email, subject, message } = req.body;
   if (!email || !subject || !message) return res.json({ success: false, message: "⚠️ All fields required!" });
 
-  const replyMail = { from: process.env.EMAIL_USER, to: email, subject, text: message };
-  transporter.sendMail(replyMail, err => {
+  transporter.sendMail({ from: process.env.EMAIL_USER, to: email, subject, text: message }, err => {
     if (err) return res.json({ success: false, message: "❌ Failed to send reply." });
     res.json({ success: true, message: "✅ Reply sent successfully!" });
   });
