@@ -5,12 +5,13 @@ const bodyParser = require("body-parser");
 const nodemailer = require("nodemailer");
 const fs = require("fs");
 const path = require("path");
+require("dotenv").config(); // Load environment variables
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// -------------------- FILES --------------------
+// -------------------- FILE PATHS --------------------
 const appointmentsFile = path.join(__dirname, "appointments.json");
 const bookingsFile = path.join(__dirname, "bookings.json");
 
@@ -18,25 +19,25 @@ const bookingsFile = path.join(__dirname, "bookings.json");
 if (!fs.existsSync(appointmentsFile)) fs.writeFileSync(appointmentsFile, JSON.stringify([]));
 if (!fs.existsSync(bookingsFile)) fs.writeFileSync(bookingsFile, JSON.stringify([]));
 
-// -------------------- EMAIL -------------------
+// -------------------- EMAIL SETUP --------------------
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
+    user: process.env.EMAIL_USER, // bandrinithin24@gmail.com
+    pass: process.env.EMAIL_PASS  // App Password from Gmail
   }
 });
-
 
 // -------------------- HELPERS --------------------
 function saveJSON(file, data) {
   fs.writeFileSync(file, JSON.stringify(data, null, 2));
 }
+
 function readJSON(file) {
   return JSON.parse(fs.readFileSync(file));
 }
 
-// -------------------- APPOINTMENT --------------------
+// -------------------- APPOINTMENTS --------------------
 app.post("/appointment", (req, res) => {
   const { name, email, phone, message } = req.body;
   if (!name || !email || !phone) return res.json({ success: false, message: "⚠️ All fields required!" });
@@ -48,7 +49,7 @@ app.post("/appointment", (req, res) => {
 
   // Email to clinic
   const clinicMail = {
-    from: "bandrinithin24@gmail.com",
+    from: process.env.EMAIL_USER,
     to: "receiveremail@gmail.com", // Clinic email
     subject: "📩 New Appointment Request",
     text: `Name: ${name}\nEmail: ${email}\nPhone: ${phone}\nMessage: ${message}\nDate: ${appointment.date}`
@@ -56,7 +57,7 @@ app.post("/appointment", (req, res) => {
 
   // Confirmation email to patient
   const patientMail = {
-    from: "bandrinithin24@gmail.com",
+    from: process.env.EMAIL_USER,
     to: email,
     subject: "✅ Appointment Request Received",
     text: `Hello ${name},\n\nWe have received your appointment request. Our team will contact you soon.\n\n- Sakthi Dental Clinic`
@@ -69,13 +70,12 @@ app.post("/appointment", (req, res) => {
   });
 });
 
-// ✅ GET all appointments
 app.get("/appointment", (req, res) => {
   const data = readJSON(appointmentsFile);
   res.json({ success: true, appointments: data });
 });
 
-// -------------------- TREATMENT BOOKING --------------------
+// -------------------- TREATMENT BOOKINGS --------------------
 app.post("/book", (req, res) => {
   const { treatment, name, email, phone } = req.body;
   if (!treatment || !name || !email || !phone) return res.json({ success: false, message: "⚠️ All fields required!" });
@@ -87,7 +87,7 @@ app.post("/book", (req, res) => {
 
   // Email to clinic
   const clinicMail = {
-    from: "bandrinithin24@gmail.com",
+    from: process.env.EMAIL_USER,
     to: "receiveremail@gmail.com",
     subject: `📩 New Treatment Booking: ${treatment}`,
     text: `Name: ${name}\nEmail: ${email}\nPhone: ${phone}\nTreatment: ${treatment}\nDate: ${booking.date}`
@@ -95,7 +95,7 @@ app.post("/book", (req, res) => {
 
   // Confirmation email to patient
   const patientMail = {
-    from: "bandrinithin24@gmail.com",
+    from: process.env.EMAIL_USER,
     to: email,
     subject: `✅ Booking Confirmation - Sakthi Dental Clinic`,
     text: `Hello ${name},\n\nYour booking is confirmed.\nTreatment: ${treatment}\nPhone: ${phone}\nDate: ${new Date(booking.date).toLocaleString()}\n\n- Sakthi Dental Clinic`
@@ -108,14 +108,7 @@ app.post("/book", (req, res) => {
   });
 });
 
-// ✅ GET all bookings
 app.get("/book", (req, res) => {
-  const data = readJSON(bookingsFile);
-  res.json({ success: true, bookings: data });
-});
-
-// -------------------- GET BOOKINGS (duplicate for admin) --------------------
-app.get("/bookings", (req, res) => {
   const data = readJSON(bookingsFile);
   res.json({ success: true, bookings: data });
 });
@@ -135,7 +128,7 @@ app.post("/reply", (req, res) => {
   const { email, subject, message } = req.body;
   if (!email || !subject || !message) return res.json({ success: false, message: "⚠️ All fields required!" });
 
-  const replyMail = { from: "bandrinithin24@gmail.com", to: email, subject, text: message };
+  const replyMail = { from: process.env.EMAIL_USER, to: email, subject, text: message };
   transporter.sendMail(replyMail, (err) => {
     if (err) return res.json({ success: false, message: "❌ Failed to send reply." });
     res.json({ success: true, message: "✅ Reply sent successfully!" });
@@ -145,5 +138,5 @@ app.post("/reply", (req, res) => {
 // -------------------- SERVER --------------------
 app.get("/", (req, res) => res.send("🚀 Backend is running! Use /book, /appointment, /bookings, /reply APIs."));
 
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));
